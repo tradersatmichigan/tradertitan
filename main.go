@@ -1,18 +1,16 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"net/http"
 )
 
 func loginHandler(w http.ResponseWriter, r *http.Request) {
   if r.Method == http.MethodGet {
-    fmt.Fprintf(w, "Got request")
+    http.ServeFile(w, r, "join.html")
   } else if r.Method == http.MethodPost {
 
   } else {
-
   }
 }
 
