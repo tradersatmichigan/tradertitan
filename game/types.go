@@ -1,54 +1,52 @@
-package game
+package main
 
 type Username = string
 
 type RegisterResult = int
-
 const (
   Success RegisterResult = iota
   UsernameTaken
 )
 
-type Side = int
+type User struct {
+  Room uint
+  TotalPlacement uint
+  TotalPnl int
 
+  Side Side
+  CurPnl int
+}
+
+type Round struct {
+  Market string
+  TrueVal int
+}
+
+type Quote struct {
+  Username Username
+  Center   int
+  Width    uint
+}
+
+type Side = int
 const (
   Long Side = iota
   Short
   None
 )
 
-type User struct {
-  Sse chan GameState 
-  Room uint
-
-  TotalPlacement uint
-  TotalPnl int
-
-  Side Side
-}
-
-type Quote struct {
+type SpreadArgs struct {
   Username Username
-  Price uint
+  Width uint
 }
 
-type Trade struct {
-  Quote Quote
+type CenterArgs struct {
+  Username Username
+  Center int
+}
+
+type TradeArgs struct {
+  Username Username
   Side Side
 }
 
-type Room struct {
-  Bid Quote
-  Ask Quote
-}
-
-type GameState struct {
-  Room Room
-  Market string
-  Trading bool
-}
-
-type Round struct {
-  True uint
-  Market string
-}

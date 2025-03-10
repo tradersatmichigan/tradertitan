@@ -1,101 +1,170 @@
-package game
+package main
 
-import "math"
+import (
+	"math"
+	"sort"
+)
 
+const buffer = 10
 
 var (
   Advance chan any
-
+  
   Register chan Username
-  RegisterOut chan RegisterResult
+  RegisterReply chan RegisterResult
 
-  OpenTrade chan Trade
-  HitTrade chan Trade
+  Spread chan SpreadArgs
+  Center chan CenterArgs
+  Trade chan TradeArgs
 )
 
-func init() {
-  Advance = make(chan any)
-  Register = make(chan Username)
-  RegisterOut = make(chan RegisterResult)
-  OpenTrade = make(chan Trade)
-  HitTrade = make(chan Trade)
-}
-
 func RunGame(Rounds []Round) {
-  users := make(map[Username] User)
-
+  Users := make(map[Username] User)
+  
   RegisterLoop:
   for {
     select {
-    case <- Advance:
+    case <-Advance:
       break RegisterLoop
     case username := <- Register:
-      if _, ok := users[username]; ok {
-        RegisterOut <- UsernameTaken
+      if _, ok := Users[username]; ok {
+        RegisterReply <- UsernameTaken
       } else {
-        users[username] = User{Sse : make(chan GameState, 1)}
-        RegisterOut <- Success
+        Users[username] = User{}
+        RegisterReply <- Success
       }
     }
   }
 
   // assign rooms
-  numRooms := uint(math.Ceil(float64(len(users) / 10.0)))
-  currentRoom := uint(0)
-  for username, user := range users {
-    user.Room = currentRoom % numRooms
-    users[username] = user
-    currentRoom++
+  NumRooms := uint(
+    math.Ceil(float64(len(Users)) / 10.0),
+  )
+
+  i := uint(0)
+  for username, user := range Users {
+    user.Room = i % NumRooms
+    Users[username] = user
+    i++
   }
 
-  // main game loop
-  for round := range Rounds {
-
-    rooms := make([]Room, numRooms)
-    // reset state
-    for username, user := range users {
-      user.Side = None
-      users[username] = user
-    }
+  // todo service gets
+  for _, Round := range Rounds {
     
-    OpenLoop:
+    Quotes := make([]Quote, NumRooms)
+
+    MarketLoop:
     for {
       select {
-      case <-Advance:
-        break OpenLoop
-      case <- HitTrade: // discard to prevent accidental trade on next round
-      case trade := <- OpenTrade:
-        if user, ok := users[trade.Quote.Username]; ok {
-          if (trade.Quote.Price > rooms[user.Room].Bid.Price || rooms[user.Room].Bid.Username == "") && 
-             (trade.Quote.Price < rooms[user.Room].Ask.Price || rooms[user.Room].Ask.Username == "") {
-            if trade.Side == Long {
-              rooms[user.Room].Bid.Username = trade.Quote.Username
-              rooms[user.Room].Bid.Price = trade.Quote.Price
-            } else if trade.Side == Short {
-              rooms[user.Room].Ask.Username = trade.Quote.Username
-              rooms[user.Room].Ask.Price = trade.Quote.Price
-            }
-            // broadcast change
+      case <- Advance:
+        break MarketLoop
+      case <- Center:
+      case <- Trade:
+      case args := <- Spread:
+        if user, ok := Users[args.Username]; ok {
+          quote := &Quotes[user.Room]
+          if quote.Width > args.Width || quote.Username == "" {
+            quote.Width = args.Width
+            quote.Username = args.Username
           }
         }
       }
     }
 
-    HitLoop:
+    CenterLoop:
     for {
       select {
-      case <- Advance:
-        break HitLoop
-      case <- OpenTrade:
-      case trade := <- HitTrade:
-        if user, ok := users[trade.Quote.Username]; ok {
-          user.Side = trade.Side
-          users[trade.Quote.Username] = user
+      case <-Advance:
+        break CenterLoop
+      case <- Trade:
+      case <- Spread:
+      case args := <- Center:
+        if user, ok := Users[args.Username]; ok {
+          quote := &Quotes[user.Room]
+          if quote.Username == args.Username {
+            quote.Center = args.Center
+          }
+        }
+      }
+    }
+    
+    // reset trade state
+    for name, user := range Users {
+      user.Side = None
+      user.CurPnl = 0
+      Users[name] = user
+    }
+
+    TradeLoop:
+    for {
+      select {
+      case <-Advance:
+        break TradeLoop
+      case <- Spread:
+      case <- Center:
+      case args := <- Trade:
+        if user, ok := Users[args.Username]; ok && 
+        Quotes[user.Room].Username != "" {
+          user.Side = args.Side
+          Users[args.Username] = user
         }
       }
     }
 
-    // total up pnl and rank
+    // calculate round profit
+    for name, user := range Users {
+      quote := Quotes[user.Room]
+      var profit int
+
+      if user.Side == Long {
+        profit = Round.TrueVal - (quote.Center + int(quote.Width))
+      } else if user.Side == Short {
+        profit = (quote.Center - int(quote.Width)) - Round.TrueVal
+      }
+      
+      user.CurPnl += profit
+      Users[name] = user
+
+      op := Quotes[user.Room].Username
+      opUser := Users[op]
+      opUser.CurPnl -= profit
+      Users[op] = opUser
+    }
+
+    // calculate room placement
+    type RoomInfo struct {
+      count uint
+      last int
+    }
+    Rooms := make([]RoomInfo, NumRooms)
+    for i := range Rooms {
+      Rooms[i].last = math.MinInt
+    }
+
+    type userSorter struct {
+      username Username
+      profit int
+      room uint
+    }
+    Arr := make([]userSorter, 0)
+    for name, user := range Users {
+      Arr = append(Arr, userSorter{name, user.CurPnl, user.Room})
+    }
+    sort.Slice(Arr, func(i, j int) bool {
+      return Arr[i].profit < Arr[j].profit
+    })
+
+    for _, user := range Arr {
+      if Rooms[user.room].last != user.profit {
+        Rooms[user.room].last = user.profit
+        Rooms[user.room].count++
+      }
+      
+      oUser := Users[user.username]
+      oUser.TotalPlacement += Rooms[user.room].count
+      oUser.TotalPnl += oUser.CurPnl
+      Users[user.username] = oUser
+    }
+
   }
 }
-
