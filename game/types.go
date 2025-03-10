@@ -44,7 +44,7 @@ type Room struct {
 
 type GameState struct {
   Room Room
-  Side Side
+  Market string
   Trading bool
 }
 
