@@ -17,6 +17,27 @@ import (
 
 var gameId string
 
+// add authentication to a handler
+func LoginRequired(fn http.HandlerFunc) http.HandlerFunc {
+  return func(w http.ResponseWriter, r *http.Request) {
+    cookie, err := r.Cookie("gameId")
+
+    if err == nil && cookie.Value == gameId {
+      fn(w, r)
+    } else {
+      http.Error(w, "Please sign in!", http.StatusBadRequest)
+    }
+  }
+}
+
+func serveGame(w http.ResponseWriter, r *http.Request) {
+  if r.Method == http.MethodGet {
+    fmt.Fprintf(w, "Hello!") // serve file here
+  } else {
+    http.Error(w, "Bad method", http.StatusBadRequest)
+  }
+}
+
 func handleJoin(w http.ResponseWriter, r *http.Request) {
   if r.Method == http.MethodGet {
     cookie, err := r.Cookie("gameId")
@@ -78,11 +99,12 @@ func main() {
   flag.Parse()
   
   rounds := getRounds(*input)
-  fmt.Println(rounds) // for compile
 
   server := &http.Server{Addr: ":" + *port}
 
+  // add http handlers
   http.HandleFunc("/join", handleJoin)
+  http.HandleFunc("/", LoginRequired(serveGame))
 
   go func() {
     fmt.Println("server started on ", *port)
@@ -91,7 +113,8 @@ func main() {
 		}
   }()
 
-  // add view advances here
+  RunGame(rounds)
+
   fmt.Println("Kill server?")
   waitForEnter() 
 

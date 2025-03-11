@@ -4,6 +4,8 @@ type Username = string
 
 type User struct {
   room uint
+  totalPnl int
+  totalPlace uint
 }
 
 type Round struct {
