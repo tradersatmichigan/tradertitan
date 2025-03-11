@@ -50,3 +50,8 @@ type TradeArgs struct {
   Side Side
 }
 
+type Display struct {
+  view string
+  market string
+  Quote Quote
+}

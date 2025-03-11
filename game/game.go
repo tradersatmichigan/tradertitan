@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"math"
 	"sort"
 )
@@ -16,7 +17,21 @@ var (
   Spread chan SpreadArgs
   Center chan CenterArgs
   Trade chan TradeArgs
+
+  GetState chan Username
+  DisplayOut chan Display
 )
+
+func init() {
+  Advance = make(chan any)
+  Register = make(chan Username)
+  RegisterReply = make(chan RegisterResult)
+  Spread = make(chan SpreadArgs)
+  Center = make(chan CenterArgs)
+  Trade = make(chan TradeArgs)
+  GetState = make(chan Username)
+  DisplayOut = make(chan Display)
+}
 
 func RunGame(Rounds []Round) {
   Users := make(map[Username] User)
@@ -26,6 +41,8 @@ func RunGame(Rounds []Round) {
     select {
     case <-Advance:
       break RegisterLoop
+    case <-GetState:
+      DisplayOut <- Display{view: "wait"}
     case username := <- Register:
       if _, ok := Users[username]; ok {
         RegisterReply <- UsernameTaken
@@ -58,6 +75,8 @@ func RunGame(Rounds []Round) {
       select {
       case <- Advance:
         break MarketLoop
+      case user := <- GetState:
+        DisplayOut <- Display{"make", Round.Market, Quotes[Users[user].Room]}
       case <- Center:
       case <- Trade:
       case args := <- Spread:
@@ -76,6 +95,8 @@ func RunGame(Rounds []Round) {
       select {
       case <-Advance:
         break CenterLoop
+      case user := <- GetState:
+        DisplayOut <- Display{"center", Round.Market, Quotes[Users[user].Room]}
       case <- Trade:
       case <- Spread:
       case args := <- Center:
@@ -100,6 +121,8 @@ func RunGame(Rounds []Round) {
       select {
       case <-Advance:
         break TradeLoop
+      case user := <- GetState:
+        DisplayOut <- Display{"trade", Round.Market, Quotes[Users[user].Room]}
       case <- Spread:
       case <- Center:
       case args := <- Trade:
@@ -165,6 +188,7 @@ func RunGame(Rounds []Round) {
       oUser.TotalPnl += oUser.CurPnl
       Users[user.username] = oUser
     }
-
   }
+
+  fmt.Print(Users)
 }
