@@ -12,3 +12,5 @@ type Round struct {
   Market string
   TrueValue int
 }
+
+type View = int

@@ -3,11 +3,8 @@ package main
 import (
 	"bufio"
 	"context"
-	"crypto/rand"
 	"flag"
 	"fmt"
-	"math"
-	"math/big"
 	"net/http"
 	"os"
 	"strconv"
@@ -15,82 +12,6 @@ import (
 	"time"
 )
 
-var gameId string
-
-// add authentication to a handler
-func LoginRequired(fn http.HandlerFunc) http.HandlerFunc {
-  return func(w http.ResponseWriter, r *http.Request) {
-    cookie, err := r.Cookie("gameId")
-
-    if err == nil && cookie.Value == gameId {
-      fn(w, r)
-    } else {
-      http.Error(w, "Please sign in!", http.StatusBadRequest)
-    }
-  }
-}
-
-func serveGame(w http.ResponseWriter, r *http.Request) {
-  if r.Method == http.MethodGet {
-    fmt.Fprintf(w, "Hello!") // serve file here
-  } else {
-    http.Error(w, "Bad method", http.StatusBadRequest)
-  }
-}
-
-func handleJoin(w http.ResponseWriter, r *http.Request) {
-  if r.Method == http.MethodGet {
-    cookie, err := r.Cookie("gameId")
-
-    if err == nil && cookie.Value == gameId {
-      fmt.Fprintf(w, "Already signed in, please continue to the game")
-    } else {
-      http.ServeFile(w, r, "html/join.html")
-    }
-
-  } else if r.Method == http.MethodPost {
-
-    if err := r.ParseForm(); err != nil {
-			http.Error(w, "Error parsing form", http.StatusBadRequest)
-			return
-		}
-
-		username := r.FormValue("username")
-		if username == "" {
-			http.Error(w, "Username is required", http.StatusBadRequest)
-			return
-		}
-
-    mtx.Lock()
-    if _, ok := users[username]; ok {
-      http.Error(w, "Name already in use", http.StatusBadRequest)
-    } else {
-      users[username] = User{}
-
-      http.SetCookie(w, &http.Cookie{
-        Name: "gameId",
-        Value: gameId,
-        Expires: time.Now().Add(3 * time.Hour),
-        HttpOnly: true,
-        Path: "/",
-      })
-
-      http.SetCookie(w, &http.Cookie{
-        Name: "username",
-        Value: username,
-        Expires: time.Now().Add(3 * time.Hour),
-        HttpOnly: true,
-        Path: "/",
-      })
-
-      http.Redirect(w, r, "/", http.StatusOK)
-    }
-    mtx.Unlock()
-
-  } else {
-    http.Error(w, "Bad request method", http.StatusBadRequest)
-  }
-}
 
 func main() {
   port := flag.String("port", "8080", "port to listen on")
@@ -99,12 +20,8 @@ func main() {
   flag.Parse()
   
   rounds := getRounds(*input)
-
+  fmt.Println(rounds) // for compile
   server := &http.Server{Addr: ":" + *port}
-
-  // add http handlers
-  http.HandleFunc("/join", handleJoin)
-  http.HandleFunc("/", LoginRequired(serveGame))
 
   go func() {
     fmt.Println("server started on ", *port)
@@ -112,8 +29,6 @@ func main() {
 			fmt.Printf("Server error: %v\n", err)
 		}
   }()
-
-  RunGame(rounds)
 
   fmt.Println("Kill server?")
   waitForEnter() 
@@ -126,15 +41,6 @@ func main() {
 	} else {
 		fmt.Println("Server gracefully stopped.")
 	}
-}
-
-func init() {
-  // create a random number to verify login
-  random, err := rand.Int(rand.Reader, big.NewInt(math.MaxInt64))
-  if err != nil {
-    panic(err)
-  }
-  gameId = random.String()
 }
 
 func getRounds(filepath string) []Round {
