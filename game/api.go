@@ -76,6 +76,8 @@ func GetStream(w http.ResponseWriter, r *http.Request, username string) {
             return
           }
 
+          fmt.Println("state: ", state)
+
           fmt.Fprintf(w, "data: %s\n\n", data)
           flusher.Flush()
         }
@@ -91,16 +93,12 @@ func GetStream(w http.ResponseWriter, r *http.Request, username string) {
 func PostMake(w http.ResponseWriter, r *http.Request, username string) {
   if r.Method == http.MethodPost {
 
-    if r.ParseForm() != nil {
-      http.Error(w, "Form error", http.StatusBadRequest)
-      return
-    }
-
-    formVal := r.Form.Get("value")
+    formVal := r.FormValue("value")
 
     width, err := strconv.ParseUint(formVal, 10, 64)
 
     if err != nil {
+      fmt.Println(err)
       http.Error(w, err.Error(), http.StatusBadRequest)
       return
     }
@@ -109,7 +107,7 @@ func PostMake(w http.ResponseWriter, r *http.Request, username string) {
     if user, ok := users[username]; ok && view == MakeView {
       room := &rooms[user.room]
       
-      if room.width > width {
+      if room.width > width || room.username == "" {
         room.username = username
         room.width = width
 
@@ -123,8 +121,6 @@ func PostMake(w http.ResponseWriter, r *http.Request, username string) {
     mtx.Unlock()
 
     w.WriteHeader(http.StatusOK) 
-    w.Write([]byte("Success"))
-
   } else {
     http.Error(w, "Bad request method", http.StatusBadRequest)
   }
@@ -159,8 +155,6 @@ func PostCenter(w http.ResponseWriter, r *http.Request, username string) {
     mtx.Unlock()
 
     w.WriteHeader(http.StatusOK) 
-    w.Write([]byte("Success"))
-
   } else {
     http.Error(w, "Bad request method", http.StatusBadRequest)
   }
@@ -189,8 +183,6 @@ func PostTrade(w http.ResponseWriter, r *http.Request, username string) {
     mtx.Unlock()
 
     w.WriteHeader(http.StatusOK) 
-    w.Write([]byte("Success"))
-
   } else {
     http.Error(w, "Bad request method", http.StatusBadRequest)
   }
