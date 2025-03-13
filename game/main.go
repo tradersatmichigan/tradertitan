@@ -20,7 +20,6 @@ func main() {
   flag.Parse()
   
   rounds := getRounds(*input)
-  fmt.Println(rounds) // for compile
   server := &http.Server{Addr: ":" + *port}
 
   go func() {
@@ -30,6 +29,7 @@ func main() {
 		}
   }()
 
+  RunGame(rounds)
   fmt.Println("Kill server?")
   waitForEnter() 
 
