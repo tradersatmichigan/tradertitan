@@ -6,6 +6,7 @@ var (
   users = make(map[Username] User)
   view = RegisterView
   mtx = sync.Mutex{}
+  rooms []Room
 )
 func Register(username Username) bool {
   mtx.Lock()
@@ -22,7 +23,14 @@ func Register(username Username) bool {
   return true
 }
 
-func Make(username Username, price uint) {
+// add catchup function
+func GetUserChan(username Username) chan GameState {
   mtx.Lock()
   defer mtx.Unlock()
+
+  if user, ok := users[username]; ok {
+    return user.datachan
+  } else {
+    return nil
+  }
 }
