@@ -113,12 +113,9 @@ func PostMake(w http.ResponseWriter, r *http.Request, username string) {
         room.username = username
         room.width = width
 
-        for _, otherUser := range users {
-          if user.room == otherUser.room {
-            select {
-            case otherUser.datachan <- GameState{MakeView, *room}:
-            default:
-            }
+        for otheruser := range users {
+          if user.room == users[otheruser].room {
+            PushUserState(otheruser)
           } 
         }
       }

@@ -4,7 +4,7 @@ type Username = string
 
 type User struct {
   room uint
-  totalPnl int
+  totalPnl float64
   totalPlace uint
 
   side Side
@@ -18,7 +18,7 @@ const (
   MakeView
   CenterView
   TradeView
-) // add leader view?
+)
 
 type Side = int
 
@@ -29,8 +29,9 @@ const (
 )
 
 type GameState struct {
-  view View
+  view string
   room Room
+  market string
 }
 
 type Round struct {
