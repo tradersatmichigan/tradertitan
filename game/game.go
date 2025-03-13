@@ -194,5 +194,27 @@ func RunGame(rounds []Round) {
     }
   }
 
-  fmt.Println(users)
+  type Pair struct {
+    Username Username
+    User User
+  }
+  
+  pairs := make([]Pair, 0)
+  for username, user := range users {
+    pairs = append(pairs, Pair{username, user})
+  }
+
+  sort.Slice(pairs, func(i, j int) bool {
+    if pairs[i].User.totalPlace != pairs[j].User.totalPlace {
+      return pairs[i].User.totalPlace > pairs[j].User.totalPlace
+    }
+    return pairs[i].User.totalPnl > pairs[j].User.totalPnl
+  })
+
+  for i := range pairs {
+    if i == 10 {
+      break
+    }
+    fmt.Println(i, pairs[i].Username)
+  }
 }
