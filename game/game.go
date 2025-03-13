@@ -48,23 +48,23 @@ func PushUserState(username Username) {
 
   if user, ok := users[username]; ok {
     state := GameState{}
-    state.market = market
+    state.Market = market
 
     if view == RegisterView {
-      state.view = "wait"
+      state.View = "wait"
     } else {
-      state.room = rooms[user.room]
+      state.Room = rooms[user.room]
 
       if view == MakeView {
-        state.view = "make"
+        state.View = "make"
       } else if view == CenterView {
-        if rooms[user.room].username == username {
-          state.view = "center"
+        if rooms[user.room].Username == username {
+          state.View = "center"
         } else {
-          state.view = "wait"
+          state.View = "wait"
         }
       } else {
-        state.view = "trade"
+        state.View = "trade"
       }
     }
 
@@ -147,18 +147,18 @@ func RunGame(rounds []Round) {
       room := rooms[user.room]
 
       if user.side == Long {
-        profit = float64(round.TrueValue) - (float64(room.center) - float64(room.width) / 2)
+        profit = float64(round.TrueValue) - (float64(room.Center) - float64(room.Width) / 2)
       } else if user.side == Short {
-        profit = (float64(room.width) / 2 + float64(room.center)) - float64(round.TrueValue)
+        profit = (float64(room.Width) / 2 + float64(room.Center)) - float64(round.TrueValue)
       }
 
       stats := ranks[username]
       stats.pnl += profit
       ranks[username] = stats
 
-      stats = ranks[room.username]
+      stats = ranks[room.Username]
       stats.pnl -= profit
-      ranks[room.username] = stats
+      ranks[room.Username] = stats
     }
 
     sorter := make([]UserRanker, 0)
@@ -194,5 +194,27 @@ func RunGame(rounds []Round) {
     }
   }
 
-  fmt.Println(users)
+  type Pair struct {
+    Username Username
+    User User
+  }
+  
+  pairs := make([]Pair, 0)
+  for username, user := range users {
+    pairs = append(pairs, Pair{username, user})
+  }
+
+  sort.Slice(pairs, func(i, j int) bool {
+    if pairs[i].User.totalPlace != pairs[j].User.totalPlace {
+      return pairs[i].User.totalPlace > pairs[j].User.totalPlace
+    }
+    return pairs[i].User.totalPnl > pairs[j].User.totalPnl
+  })
+
+  for i := range pairs {
+    if i == 10 {
+      break
+    }
+    fmt.Println(i, pairs[i].Username)
+  }
 }

@@ -76,7 +76,7 @@ func GetStream(w http.ResponseWriter, r *http.Request, username string) {
             return
           }
 
-          fmt.Println("state: ", state)
+          fmt.Println("state: ", state, ", data: ", data)
 
           fmt.Fprintf(w, "data: %s\n\n", data)
           flusher.Flush()
@@ -107,9 +107,9 @@ func PostMake(w http.ResponseWriter, r *http.Request, username string) {
     if user, ok := users[username]; ok && view == MakeView {
       room := &rooms[user.room]
       
-      if room.width > width || room.username == "" {
-        room.username = username
-        room.width = width
+      if room.Width > width || room.Username == "" {
+        room.Username = username
+        room.Width = width
 
         for otheruser := range users {
           if user.room == users[otheruser].room {
@@ -128,14 +128,9 @@ func PostMake(w http.ResponseWriter, r *http.Request, username string) {
 
 // check negative?
 func PostCenter(w http.ResponseWriter, r *http.Request, username string) {
-  if r.Method == http.MethodPost && r.ParseForm() == nil {
+  if r.Method == http.MethodPost {
 
-    if r.ParseForm() != nil {
-      http.Error(w, "Form error", http.StatusBadRequest)
-      return
-    }
-
-    formVal := r.Form.Get("value")
+    formVal := r.FormValue("value")
 
     center, err := strconv.ParseUint(formVal, 10, 64)
 
@@ -148,8 +143,8 @@ func PostCenter(w http.ResponseWriter, r *http.Request, username string) {
     if user, ok := users[username]; ok && view == CenterView {
       room := &rooms[user.room]
       
-      if room.username == username {
-        room.center = center
+      if room.Username == username {
+        room.Center = center
       }
     }
     mtx.Unlock()
@@ -163,15 +158,10 @@ func PostCenter(w http.ResponseWriter, r *http.Request, username string) {
 func PostTrade(w http.ResponseWriter, r *http.Request, username string) {
   if r.Method == http.MethodPost {
 
-    if r.ParseForm() != nil {
-      http.Error(w, "Form error", http.StatusBadRequest)
-      return
-    }
-
-    formVal := r.Form.Get("value")
+    formVal := r.FormValue("value")
 
     mtx.Lock()
-    if user, ok := users[username]; ok && view == TradeView && rooms[user.room].username != "" {
+    if user, ok := users[username]; ok && view == TradeView && rooms[user.room].Username != "" {
 
       if formVal == "buy" {
         user.side = Long
