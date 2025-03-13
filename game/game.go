@@ -105,7 +105,8 @@ func RunGame(rounds []Round) {
     }
 
     mtx.Unlock()
-    time.Sleep(time.Second * 10)
+    //time.Sleep(time.Second * 10)
+    waitForEnter()
     mtx.Lock()
 
     view = CenterView
@@ -114,7 +115,8 @@ func RunGame(rounds []Round) {
     }
 
     mtx.Unlock()
-    time.Sleep(time.Second * 10)
+    //time.Sleep(time.Second * 10)
+    waitForEnter()
     mtx.Lock()
 
     view = TradeView
@@ -125,7 +127,8 @@ func RunGame(rounds []Round) {
     }
 
     mtx.Unlock()
-    time.Sleep(time.Second * 10)
+    //time.Sleep(time.Second * 10)
+    waitForEnter()
     mtx.Lock()
 
     // ranking
