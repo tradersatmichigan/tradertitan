@@ -112,6 +112,15 @@ func PostMake(w http.ResponseWriter, r *http.Request, username string) {
       if room.width > width {
         room.username = username
         room.width = width
+
+        for _, otherUser := range users {
+          if user.room == otherUser.room {
+            select {
+            case otherUser.datachan <- GameState{MakeView, *room}:
+            default:
+            }
+          } 
+        }
       }
     }
     mtx.Unlock()
