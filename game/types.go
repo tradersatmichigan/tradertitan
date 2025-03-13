@@ -29,9 +29,9 @@ const (
 )
 
 type GameState struct {
-  view string
-  room Room
-  market string
+  View string `json:"view"`
+  Room Room `json:"room"`
+  Market string `json:"market"`
 }
 
 type Round struct {
@@ -40,7 +40,7 @@ type Round struct {
 }
 
 type Room struct {
-  username Username
-  width uint64
-  center uint64
+  Username Username `json:"username"`
+  Width uint64 `json:"width"`
+  Center uint64 `json:"center"`
 }
