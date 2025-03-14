@@ -55,8 +55,10 @@ const Game = () => {
 
   return (
     <StateContext.Provider value={state}>
-      <Leaderboard />
-      {renderCurrentView()}
+      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 space-y-6">
+        {renderCurrentView()}
+        <Leaderboard />
+      </div>
     </StateContext.Provider>
   );
 };

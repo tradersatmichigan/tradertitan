@@ -62,7 +62,6 @@ func PushUserState(username Username) {
 				state.View = "make"
 			} else if view == CenterView {
 				if rooms[user.room].Username == username {
-					// state.Room.Center = 0
 					state.View = "center"
 				} else {
 					state.View = "wait"
@@ -71,11 +70,7 @@ func PushUserState(username Username) {
 				if rooms[user.room].Username == username {
 					state.View = "wait"
 				} else {
-					if user.side == None {
-						user.side = Long
-						users[username] = user
-						state.View = "trade"
-					}
+					state.View = "trade"
 				}
 			}
 		}
