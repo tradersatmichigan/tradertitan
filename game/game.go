@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"math"
+	"math/rand"
 	"sort"
 	"sync"
 )
@@ -87,6 +88,34 @@ func PushUserState(username Username) {
 	}
 }
 
+// requires mutex
+func MakeGroups(NumRooms uint) []Room {
+  arr := make([]Username, 0) 
+  for user := range users {
+    arr = append(arr, user)
+  }
+
+  rand.Shuffle(len(arr), func(i, j int) {
+    arr[i], arr[j] = arr[j], arr[i]
+  })
+
+  rooms := make([]Room, NumRooms)
+
+  for i, username := range arr {
+    user := users[username] 
+    user.room = uint(i) % NumRooms
+
+    user.currPlace = 0
+    user.currPnl = 0
+
+    users[username] = user
+
+    rooms[user.room].Ranks = append(rooms[user.room].Ranks, Rank{username, 0})
+  }
+
+  return rooms
+}
+
 func RunGame(rounds []Round) {
 	mtx.Lock()
 	defer mtx.Unlock()
@@ -97,19 +126,19 @@ func RunGame(rounds []Round) {
 	waitForEnter()
 	mtx.Lock()
 
+  var rooms []Room
+
 	// assign rooms
 	NumRooms := uint(math.Ceil(float64(len(users)) / 10.0))
-	i := uint(0)
-	for username, user := range users {
-		user.room = i % NumRooms
-		i++
-		users[username] = user
-	}
 
-	for _, round := range rounds {
+	for roundNum, round := range rounds {
+
+    if roundNum % RoundsPerGroup == 0 {
+      rooms = MakeGroups(NumRooms)
+    }
+
 		view = MakeView
 		market = round.Market
-		rooms = make([]Room, NumRooms)
 
 		for user := range users {
 			PushUserState(user)
@@ -132,7 +161,7 @@ func RunGame(rounds []Round) {
 
 		view = TradeView
 		for username, user := range users {
-			user.side = None
+			user.side = Long
 			users[username] = user
 			PushUserState(username)
 		}
@@ -143,21 +172,10 @@ func RunGame(rounds []Round) {
 		mtx.Lock()
 
 		// ranking
-		type UserRanker struct {
-			username Username
-			pnl      float64
-			room     uint
-		}
-
-		ranks := make(map[Username]UserRanker)
-		for username, user := range users {
-			ranks[username] = UserRanker{username, 0, user.room}
-		}
-
 		for username, user := range users {
 			var profit float64
 			room := rooms[user.room]
-			if username == room.Username {
+			if username == room.Username || room.Username == "" {
 				continue
 			}
 
@@ -175,47 +193,45 @@ func RunGame(rounds []Round) {
 				fmt.Println("room.Width: ", float64(room.Width))
 			}
 
-			stats := ranks[username]
-			stats.pnl += profit
-			ranks[username] = stats
+      adj_profit := profit / math.Sqrt(round.TrueValue * room.Width)
 
-			stats = ranks[room.Username]
-			stats.pnl -= profit
-			ranks[room.Username] = stats
+      user.currPnl += adj_profit
+      users[username] = user
+
+      maker := users[room.Username]
+      maker.currPnl -= adj_profit
+      users[room.Username] = maker
 		}
 
-		sorter := make([]UserRanker, 0)
+    for r := range rooms {
+      room := &rooms[r]
+      sort.Slice(room.Ranks, func(i, j int) bool {
+        return users[room.Ranks[i].Username].currPnl > users[room.Ranks[j].Username].currPnl
+      })
 
-		for _, user := range ranks {
-			sorter = append(sorter, user)
-		}
+      next_place := uint(0)
+      last_profit := math.Inf(-1)
 
-		sort.Slice(sorter, func(i, j int) bool {
-			if sorter[i].room != sorter[j].room {
-				return sorter[i].room < sorter[j].room
-			}
-			return sorter[i].pnl > sorter[j].pnl
-		})
+      for i, stats := range room.Ranks {
+        if users[stats.Username].currPnl != last_profit {
+          next_place++
+        }
+        room.Ranks[i].Rank = next_place
+        last_profit = users[stats.Username].currPnl
 
-		lastRoom := -1
-		lastProfit := math.Inf(-1)
-		curRank := 0
-		for _, stats := range sorter {
-			if stats.room != uint(lastRoom) {
-				curRank = 0
-			} else if stats.pnl != lastProfit {
-				curRank++
-			}
+        user := users[stats.Username]
+        user.currPlace = next_place
+      }
+    }
 
-			user := users[stats.username]
-			user.currPlace = uint(curRank + 1)
-			user.totalPlace += uint(curRank)
-			user.totalPnl += stats.pnl
-			users[stats.username] = user
+    if (roundNum + 1) % RoundsPerGroup == 0 { // total it
+      for username, user := range users {
+        user.totalPnl += user.currPnl
+        user.totalPlace += user.currPlace
+        users[username] = user
+      }
+    }
 
-			lastProfit = stats.pnl
-			lastRoom = int(stats.room)
-		}
 	}
 
 	type Pair struct {
