@@ -53,6 +53,7 @@ func PushUserState(username Username) {
 		state.Market = market
 		state.Pnl = user.totalPnl
 		state.Place = user.currPlace
+    state.Side = user.side
 
 		if view == RegisterView {
 			state.View = "wait"

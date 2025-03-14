@@ -37,6 +37,7 @@ type GameState struct {
 	Market string  `json:"market"`
 	Pnl    float64 `json:"pnl"`
 	Place  uint    `json:"place"`
+  Side           `json:"side"`
 }
 
 type Round struct {
