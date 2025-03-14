@@ -56,7 +56,7 @@ func getRounds(filepath string) []Round {
 		line := scanner.Text()
 		parts := strings.SplitN(line, " ", 2)
 
-		number, err := strconv.Atoi(parts[0])
+		number, err := strconv.ParseFloat(parts[0], 64)
 		if err != nil {
 			panic(err)
 		}

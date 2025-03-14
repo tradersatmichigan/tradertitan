@@ -94,7 +94,7 @@ func PostMake(w http.ResponseWriter, r *http.Request, username string) {
 
 		formVal := r.FormValue("value")
 
-		width, err := strconv.ParseUint(formVal, 10, 64)
+		width, err := strconv.ParseFloat(formVal, 64)
 
 		if err != nil {
 			fmt.Println(err)
@@ -131,7 +131,7 @@ func PostCenter(w http.ResponseWriter, r *http.Request, username string) {
 
 		formVal := r.FormValue("value")
 
-		center, err := strconv.ParseUint(formVal, 10, 64)
+		center, err := strconv.ParseFloat(formVal, 64)
 
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)

@@ -6,6 +6,8 @@ type User struct {
 	room       uint
 	totalPnl   float64
 	totalPlace uint
+
+  currPnl    float64
 	currPlace  uint
 
 	side     Side
@@ -35,15 +37,24 @@ type GameState struct {
 	Market string  `json:"market"`
 	Pnl    float64 `json:"pnl"`
 	Place  uint    `json:"place"`
+  Side           `json:"side"`
 }
 
 type Round struct {
 	Market    string
-	TrueValue int
+	TrueValue float64
+}
+
+type Rank struct {
+  Username Username `json:"username"`
+  Rank uint `json:"rank"`
 }
 
 type Room struct {
+  Ranks    []Rank   `json:"ranks"`
 	Username Username `json:"username"`
-	Width    uint64   `json:"width"`
-	Center   uint64   `json:"center"`
+	Width    float64   `json:"width"`
+	Center   float64   `json:"center"`
 }
+
+const RoundsPerGroup = 5
