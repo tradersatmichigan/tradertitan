@@ -77,8 +77,6 @@ func GetStream(w http.ResponseWriter, r *http.Request, username string) {
             return
           }
 
-          fmt.Println("state: ", state, ", data: ", data)
-
           fmt.Fprintf(w, "data: %s\n\n", data)
           flusher.Flush()
         }
