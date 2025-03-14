@@ -49,6 +49,8 @@ func PushUserState(username Username) {
   if user, ok := users[username]; ok {
     state := GameState{}
     state.Market = market
+    state.Pnl = user.totalPnl
+    state.Place = user.totalPlace
 
     if view == RegisterView {
       state.View = "wait"
@@ -59,12 +61,23 @@ func PushUserState(username Username) {
         state.View = "make"
       } else if view == CenterView {
         if rooms[user.room].Username == username {
+          // state.Room.Center = 0
           state.View = "center"
         } else {
           state.View = "wait"
         }
-      } else {
-        state.View = "trade"
+      } else if view == TradeView {
+        if rooms[user.room].Username == username {
+          state.View = "wait"
+        } else {
+          if (user.side == None) {
+            user.side = Long
+            users[username] = user
+            state.View = "trade"
+          } else {
+            state.View = "wait"
+          }
+        }
       }
     }
 
@@ -212,9 +225,6 @@ func RunGame(rounds []Round) {
   })
 
   for i := range pairs {
-    if i == 10 {
-      break
-    }
-    fmt.Println(i, pairs[i].Username)
+    fmt.Println(i + 1, ". ", pairs[i].Username)
   }
 }

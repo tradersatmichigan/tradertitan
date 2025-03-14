@@ -9,7 +9,7 @@ import (
 
 func HandleLogin(w http.ResponseWriter, r *http.Request) {
   if IsLoggedIn(r) {
-    http.Error(w, "Already signed in, please continue to the game", http.StatusBadRequest)
+    http.Redirect(w, r, "/", http.StatusSeeOther)
   } else if r.Method == http.MethodGet {
     http.ServeFile(w, r, "html/join.html")
   } else if r.Method == http.MethodPost {
@@ -29,7 +29,8 @@ func HandleLogin(w http.ResponseWriter, r *http.Request) {
       Login(w, r, username)
       http.Redirect(w, r, "/", http.StatusSeeOther)
     } else {
-      http.Error(w, "Name already in use", http.StatusBadRequest)
+      http.Error(w, "Name already in use or game has already started",
+                 http.StatusBadRequest)
     }
     
   } else {
@@ -39,7 +40,7 @@ func HandleLogin(w http.ResponseWriter, r *http.Request) {
 
 func ServeGame(w http.ResponseWriter, r *http.Request, _ string) { // also return current state
   if r.Method == http.MethodGet {
-    http.ServeFile(w, r, "html/game.html")
+    http.ServeFile(w, r, "static/index.html")
   } else {
     http.Error(w, "Bad request method", http.StatusBadRequest)
   }
@@ -146,6 +147,8 @@ func PostCenter(w http.ResponseWriter, r *http.Request, username string) {
       if room.Username == username {
         room.Center = center
       }
+
+      PushUserState(username);
     }
     mtx.Unlock()
 

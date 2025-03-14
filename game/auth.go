@@ -43,7 +43,8 @@ func init() {
         username, _ := r.Cookie("username")
         hf(w, r, username.Value)
       } else {
-        http.Error(w, "Login Required", http.StatusBadRequest)
+        // http.Error(w, "Login Required", http.StatusBadRequest)
+        http.Redirect(w, r, "/join", http.StatusSeeOther)
       }
 
     }
