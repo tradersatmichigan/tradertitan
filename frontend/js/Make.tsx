@@ -51,6 +51,7 @@ const Make = () => {
           value={bid === undefined ? "" : String(bid)}
           onChange={(e) => setBid(Number(e.target.value))}
           min="0"
+          autoComplete="off"
           required
         />
         <button type="submit">Submit</button>

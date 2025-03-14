@@ -4,6 +4,7 @@ import Waiting from "./Waiting";
 import Make from "./Make";
 import Center from "./Center";
 import Trade from "./Trade";
+import Leaderboard from "./Leaderboard";
 
 export const StateContext = createContext<GameState | undefined>(undefined);
 
@@ -54,8 +55,7 @@ const Game = () => {
 
   return (
     <StateContext.Provider value={state}>
-      <p>Current PnL: {state.pnl} </p>
-      <p>Current place: {state.place} </p>
+      <Leaderboard />
       {renderCurrentView()}
     </StateContext.Provider>
   );

@@ -43,6 +43,7 @@ const Center = () => {
           value={center === undefined ? "" : String(center)}
           onChange={(e) => setCenter(Number(e.target.value))}
           min="0"
+          autoComplete="off"
           required
         />
         <button type="submit">Submit</button>
