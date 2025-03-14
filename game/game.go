@@ -50,7 +50,7 @@ func PushUserState(username Username) {
     state := GameState{}
     state.Market = market
     state.Pnl = user.totalPnl
-    state.Place = user.totalPlace
+    state.Place = user.currPlace
 
     if view == RegisterView {
       state.View = "wait"
@@ -74,8 +74,6 @@ func PushUserState(username Username) {
             user.side = Long
             users[username] = user
             state.View = "trade"
-          } else {
-            state.View = "wait"
           }
         }
       }
@@ -158,11 +156,22 @@ func RunGame(rounds []Round) {
     for username, user := range users {
       var profit float64
       room := rooms[user.room]
+      if (username == room.Username) {
+        continue;
+      }
 
       if user.side == Long {
-        profit = float64(round.TrueValue) - (float64(room.Center) - float64(room.Width) / 2)
+        profit = float64(round.TrueValue) - (float64(room.Center) + float64(room.Width) / 2)
+        fmt.Println("profit from Long: ", profit)
+        fmt.Println("round.TrueValue: ", float64(round.TrueValue))
+        fmt.Println("room.Center: ", float64(room.Center))
+        fmt.Println("room.Width: ", float64(room.Width))
       } else if user.side == Short {
-        profit = (float64(room.Width) / 2 + float64(room.Center)) - float64(round.TrueValue)
+        profit = float64(round.TrueValue) + (float64(room.Width) / 2 - float64(room.Center))
+        fmt.Println("profit from Short: ", profit)
+        fmt.Println("round.TrueValue: ", float64(round.TrueValue))
+        fmt.Println("room.Center: ", float64(room.Center))
+        fmt.Println("room.Width: ", float64(room.Width))
       }
 
       stats := ranks[username]
@@ -198,6 +207,7 @@ func RunGame(rounds []Round) {
       }
 
       user := users[stats.username]
+      user.currPlace = uint(curRank + 1)
       user.totalPlace += uint(curRank)
       user.totalPnl += stats.pnl
       users[stats.username] = user

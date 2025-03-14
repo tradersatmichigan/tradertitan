@@ -6,6 +6,7 @@ type User struct {
 	room       uint
 	totalPnl   float64
 	totalPlace uint
+  currPlace  uint
 
 	side     Side
 	datachan chan GameState
@@ -29,11 +30,11 @@ const (
 )
 
 type GameState struct {
-	View   string `json:"view"`
-	Room   Room   `json:"room"`
-	Market string `json:"market"`
-	Pnl    float64
-	Place  uint
+	View   string  `json:"view"`
+	Room   Room    `json:"room"`
+	Market string  `json:"market"`
+  Pnl    float64 `json:"pnl"`
+  Place  uint    `json:"place"`
 }
 
 type Round struct {
