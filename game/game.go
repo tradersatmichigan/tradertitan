@@ -53,7 +53,7 @@ func PushUserState(username Username) {
 		state.Market = market
 		state.Pnl = user.totalPnl
 		state.Place = user.currPlace
-    state.Side = user.side
+		state.Side = user.side
 
 		if view == RegisterView {
 			state.View = "wait"
@@ -64,7 +64,6 @@ func PushUserState(username Username) {
 				state.View = "make"
 			} else if view == CenterView {
 				if rooms[user.room].Username == username {
-					// state.Room.Center = 0
 					state.View = "center"
 				} else {
 					state.View = "wait"
@@ -73,11 +72,7 @@ func PushUserState(username Username) {
 				if rooms[user.room].Username == username {
 					state.View = "wait"
 				} else {
-					if user.side == None {
-						user.side = Long
-						users[username] = user
-						state.View = "trade"
-					}
+					state.View = "trade"
 				}
 			}
 		}
@@ -91,30 +86,33 @@ func PushUserState(username Username) {
 
 // requires mutex
 func MakeGroups(NumRooms uint) []Room {
-  arr := make([]Username, 0) 
-  for user := range users {
-    arr = append(arr, user)
-  }
+	arr := make([]Username, 0)
+	for user := range users {
+		arr = append(arr, user)
+	}
 
-  rand.Shuffle(len(arr), func(i, j int) {
-    arr[i], arr[j] = arr[j], arr[i]
-  })
+	rand.Shuffle(len(arr), func(i, j int) {
+		arr[i], arr[j] = arr[j], arr[i]
+	})
 
-  rooms := make([]Room, NumRooms)
+	rooms := make([]Room, NumRooms)
 
-  for i, username := range arr {
-    user := users[username] 
-    user.room = uint(i) % NumRooms
+	for i, username := range arr {
+		user := users[username]
+		user.room = uint(i) % NumRooms
 
-    user.currPlace = 0
-    user.currPnl = 0
+		user.currPlace = 0
+		user.currPnl = 0
 
-    users[username] = user
+		users[username] = user
 
-    rooms[user.room].Ranks = append(rooms[user.room].Ranks, Rank{username, 0})
-  }
+		if rooms[user.room].Ranks == nil {
+			rooms[user.room].Ranks = make([]Rank, 0)
+		}
+		rooms[user.room].Ranks = append(rooms[user.room].Ranks, Rank{username, 0})
+	}
 
-  return rooms
+	return rooms
 }
 
 func RunGame(rounds []Round) {
@@ -127,16 +125,14 @@ func RunGame(rounds []Round) {
 	waitForEnter()
 	mtx.Lock()
 
-  var rooms []Room
-
-	// assign rooms
 	NumRooms := uint(math.Ceil(float64(len(users)) / 10.0))
 
 	for roundNum, round := range rounds {
 
-    if roundNum % RoundsPerGroup == 0 {
-      rooms = MakeGroups(NumRooms)
-    }
+		if roundNum%RoundsPerGroup == 0 {
+			// assign rooms
+			rooms = MakeGroups(NumRooms)
+		}
 
 		view = MakeView
 		market = round.Market
@@ -182,56 +178,48 @@ func RunGame(rounds []Round) {
 
 			if user.side == Long {
 				profit = float64(round.TrueValue) - (float64(room.Center) + float64(room.Width)/2)
-				fmt.Println("profit from Long: ", profit)
-				fmt.Println("round.TrueValue: ", float64(round.TrueValue))
-				fmt.Println("room.Center: ", float64(room.Center))
-				fmt.Println("room.Width: ", float64(room.Width))
 			} else if user.side == Short {
 				profit = float64(round.TrueValue) + (float64(room.Width)/2 - float64(room.Center))
-				fmt.Println("profit from Short: ", profit)
-				fmt.Println("round.TrueValue: ", float64(round.TrueValue))
-				fmt.Println("room.Center: ", float64(room.Center))
-				fmt.Println("room.Width: ", float64(room.Width))
 			}
 
-      adj_profit := profit / math.Sqrt(round.TrueValue * room.Width)
+			adj_profit := profit / math.Sqrt(round.TrueValue*room.Width)
 
-      user.currPnl += adj_profit
-      users[username] = user
+			user.currPnl += adj_profit
+			users[username] = user
 
-      maker := users[room.Username]
-      maker.currPnl -= adj_profit
-      users[room.Username] = maker
+			maker := users[room.Username]
+			maker.currPnl -= adj_profit
+			users[room.Username] = maker
 		}
 
-    for r := range rooms {
-      room := &rooms[r]
-      sort.Slice(room.Ranks, func(i, j int) bool {
-        return users[room.Ranks[i].Username].currPnl > users[room.Ranks[j].Username].currPnl
-      })
+		for r := range rooms {
+			room := &rooms[r]
+			sort.Slice(room.Ranks, func(i, j int) bool {
+				return users[room.Ranks[i].Username].currPnl > users[room.Ranks[j].Username].currPnl
+			})
 
-      next_place := uint(0)
-      last_profit := math.Inf(-1)
+			next_place := uint(0)
+			last_profit := math.Inf(-1)
 
-      for i, stats := range room.Ranks {
-        if users[stats.Username].currPnl != last_profit {
-          next_place++
-        }
-        room.Ranks[i].Rank = next_place
-        last_profit = users[stats.Username].currPnl
+			for i, stats := range room.Ranks {
+				if users[stats.Username].currPnl != last_profit {
+					next_place++
+				}
+				room.Ranks[i].Rank = next_place
+				last_profit = users[stats.Username].currPnl
 
-        user := users[stats.Username]
-        user.currPlace = next_place
-      }
-    }
+				user := users[stats.Username]
+				user.currPlace = next_place
+			}
+		}
 
-    if (roundNum + 1) % RoundsPerGroup == 0 { // total it
-      for username, user := range users {
-        user.totalPnl += user.currPnl
-        user.totalPlace += user.currPlace
-        users[username] = user
-      }
-    }
+		if (roundNum+1)%RoundsPerGroup == 0 { // total it
+			for username, user := range users {
+				user.totalPnl += user.currPnl
+				user.totalPlace += user.currPlace
+				users[username] = user
+			}
+		}
 
 	}
 
