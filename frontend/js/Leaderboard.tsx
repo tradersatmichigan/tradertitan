@@ -4,18 +4,9 @@ import { StateContext } from "./Game";
 const Leaderboard = () => {
   const state = useContext(StateContext);
 
-  const data = [
-    { rank: 1, name: "Conner" },
-    { rank: 2, name: "Player 1" },
-    { rank: 2, name: "Player 2" },
-    { rank: 4, name: "Player 3" },
-    { rank: 5, name: "Player 4" },
-    { rank: 6, name: "Player 5" },
-    { rank: 6, name: "Player 5" },
-    { rank: 6, name: "Player 5" },
-    { rank: 6, name: "Player 5" },
-    { rank: 6, name: "Player 5" },
-  ];
+  if (state === undefined || state?.room.ranks === null) {
+    return;
+  }
 
   return (
     <div className="bg-white shadow-lg rounded-2xl p-6 max-w-sm w-full">
@@ -24,13 +15,13 @@ const Leaderboard = () => {
       </h3>
 
       <ul className="mt-4 space-y-2 text-gray-700">
-        {data.map(({ rank, name }) => (
+        {state.room.ranks.map(({ rank, username }) => (
           <li
-            key={name}
+            key={username}
             className="flex justify-between px-4 py-2 bg-gray-100 rounded-lg"
           >
             <span className="font-medium">{rank}.</span>
-            <span>{name}</span>
+            <span>{username}</span>
           </li>
         ))}
       </ul>
